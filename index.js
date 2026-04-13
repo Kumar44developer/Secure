@@ -66,6 +66,9 @@ app.post("/register", async (req, res) => {
 });
 
 
+app.post("/login", async (req, res) => {
+  const email = req.body.username;
+  const loginPassword = req.body.password;
 
 
 
