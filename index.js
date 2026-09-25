@@ -2,24 +2,28 @@ import express from "express";
 import bodyParser from "body-parser";
 import pg from "pg";
 import bcrypt from "bcrypt";
+import dotenv from "dotenv";
 
+dotenv.config();
 
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000;
 const saltRounds = 10;
-
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static("public"));
 
 const db = new pg.Client({
-  user: "postgres",
-  host: "localhost",
-  database: "secrets",
-  password: "123456",
-  port: 5432,
+  user: process.env.DB_USER || "postgres",
+  host: process.env.DB_HOST || "localhost",
+  database: process.env.DB_NAME || "secrets",
+  password: process.env.DB_PASSWORD || "123456",
+  port: parseInt(process.env.DB_PORT) || 5432,
 });
-db.connect();
+
+db.connect()
+  .then(() => console.log("Connected to PostgreSQL database"))
+  .catch((err) => console.error("Database connection error:", err.message));
 
 app.get("/", (req, res) => {
   res.render("home.ejs");
@@ -42,34 +46,25 @@ app.post("/register", async (req, res) => {
       email,
     ]);
 
-
     if (checkResult.rows.length > 0) {
       res.send("Email already exists. Try logging in.");
     } else {
-      //hashing the password and saving it in the database
-      bcrypt.hash(password, saltRounds, async (err, hash) => {
-        if (err) {
-          console.error("Error hashing password:", err);
-        } else {
-          console.log("Hashed Password:", hash);
-          await db.query(
-            "INSERT INTO users (email, password) VALUES ($1, $2)",
-            [email, hash]
-          );
-          res.render("secrets.ejs");
-        }
-      });
+      const hash = await bcrypt.hash(password, saltRounds);
+      await db.query(
+        "INSERT INTO users (email, password) VALUES ($1, $2)",
+        [email, hash]
+      );
+      res.render("secrets.ejs");
     }
   } catch (err) {
     console.log(err);
+    res.status(500).send("An error occurred during registration.");
   }
 });
-
 
 app.post("/login", async (req, res) => {
   const email = req.body.username;
   const loginPassword = req.body.password;
-
 
   try {
     const result = await db.query("SELECT * FROM users WHERE email = $1", [
@@ -78,41 +73,22 @@ app.post("/login", async (req, res) => {
     if (result.rows.length > 0) {
       const user = result.rows[0];
       const storedHashedPassword = user.password;
-      //verifying the password
-      bcrypt.compare(loginPassword, storedHashedPassword, (err, result) => {
-        if (err) {
-          console.error("Error comparing passwords:", err);
-        } else {
-          if (result) {
-            res.render("secrets.ejs");
-          } else {
-            res.send("Incorrect Password");
-          }
-        }
-      });
+
+      const match = await bcrypt.compare(loginPassword, storedHashedPassword);
+      if (match) {
+        res.render("secrets.ejs");
+      } else {
+        res.send("Incorrect Password");
+      }
     } else {
       res.send("User not found");
     }
   } catch (err) {
     console.log(err);
+    res.status(500).send("An error occurred during login.");
   }
 });
 
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
 });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

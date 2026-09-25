@@ -1,19 +1,20 @@
 {
-  "name": "9.0-secrets-project",
+  "name": "secure-authentication",
   "version": "1.0.0",
-  "description": "",
+  "description": "A secure user authentication system with bcrypt password hashing, built with Node.js, Express, PostgreSQL, and EJS",
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node index.js",
+    "dev": "node --watch index.js"
   },
-
-  "keywords": [],
-  "author": "",
+  "keywords": ["authentication", "bcrypt", "express", "postgresql", "security"],
+  "author": "Kumar44developer",
   "license": "ISC",
-    "dependencies": {
+  "dependencies": {
     "bcrypt": "^5.1.1",
     "body-parser": "^1.20.2",
+    "dotenv": "^16.3.1",
     "ejs": "^3.1.9",
     "express": "^4.18.2",
     "pg": "^8.11.3"
